@@ -298,16 +298,24 @@
       var container = document.getElementById('mynetwork');
 
       network = new vis.Network(container, data, options);
+      network.on("dragEnd", function (params) {
+        if(params.nodes[0]){
+          var node = nodes._data[params.nodes[0]];
+          newNode(node.label, node.group, params.pointer.canvas.x, params.pointer.canvas.y, false, false);
+        }
+        //console.log(JSON.stringify(params, null, 4));
+        //console.log(params.nodes[0]);
+        //console.log(params.pointer.canvas.x);
+        //console.log(params.pointer.canvas.y);
+    });
     }
 
     function edgeAdd(data, callback){
-      document.getElementById('operation').innerHTML = "Add Edge";
-      document.getElementById('edge-label').value = data.label || "";
-      document.getElementById('edge-width').value = data.width || 1;
-      document.getElementById('saveButton2').onclick = saveEdge.bind(this, data, callback);
-      document.getElementById('cancelButton2').onclick = clearPopUp.bind();
-      document.getElementById('edge-popUp').style.display = 'block';
-
+      data.label = "";
+      data.width = 1;
+      callback(data);
+      /*var func = saveEdge.bind(this, data, callback);
+      func();*/
     }
 
     function edgeEdit(data, callback){
@@ -332,12 +340,11 @@
       callback(null);
     }
 
-    function saveEdge(data,callback) {
-      data.label = document.getElementById('edge-label').value;
-      data.width = document.getElementById('edge-width').value;
-      clearPopUp();
+    /*function saveEdge(data,callback) {
+      data.label = "";
+      data.width = 1;
       callback(data);
-    }
+    }*/
     function saveData(data,callback) {
       data.id = document.getElementById('node-id').value;
       data.label = document.getElementById('node-label').value;
@@ -440,7 +447,7 @@
     function drag(ev) {
       var dataT = ev.srcElement.id;
       var typeT = ev.srcElement.parentNode.id;
-      console.log(typeT);
+      //console.log(typeT);
       ev.dataTransfer.setData("text", dataT);
       ev.dataTransfer.setData("type", typeT);
             //console.log(ev.dataTransfer);
@@ -459,7 +466,7 @@
       var dataT = ev.dataTransfer.getData("text");
       var typeT = ev.dataTransfer.getData("type");
       if(typeT == "nodes-list"){
-        newNode(dataT, dataT, posX, posY, false, true);
+        newNode(dataT, dataT, posX, posY, true, true);
         
       }
       else{
@@ -502,8 +509,8 @@
                               '</td>'+
                            '</tr>'+
                            '<tr>'+
-                              '<td>PosX: <input type="text" id="posX" value="" onfocus="$(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\')"> </td>'+
-                              '<td>PosY: <input type="text" id="posY" value="" onfocus="$(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\')"> </td>'+
+                              '<td>PosX: <input type="text" id="posX" value="" onfocus="$(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition)"> </td>'+
+                              '<td>PosY: <input type="text" id="posY" value="" onfocus="$(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition)"> </td>'+
                            '</tr>'+
                            '<tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>'+
                            '<tr><td colspan="2"><input type="button" value="create" onclick="newNode($(\'#nodelabel\').val(), $(\'#nodetypes\').val(), $(\'#posX\').val(), $(\'#posY\').val(), $(\'#fixed\').prop(\'checked\'), true)"/></td></tr>'+
@@ -526,8 +533,8 @@
                               '</td>'+
                            '</tr>'+
                            '<tr>'+
-                              '<td>PosX: <input type="text" id="posX" value="" onfocus="$(\'#mynetwork\').off(\'click\'); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\'); $(\'#mynetwork\').click(getNodeInfo);"> </td>'+
-                              '<td>PosY: <input type="text" id="posY" value="" onfocus="$(\'#mynetwork\').off(\'click\'); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\'); $(\'#mynetwork\').click(getNodeInfo);"> </td>'+
+                              '<td>PosX: <input type="text" id="posX" value="" onfocus="$(\'#mynetwork\').off(\'click\', getNodeInfo); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition); $(\'#mynetwork\').click({param: \'0\'}, getNodeInfo);"> </td>'+
+                              '<td>PosY: <input type="text" id="posY" value="" onfocus="$(\'#mynetwork\').off(\'click\', getNodeInfo); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\',getClickPosition); $(\'#mynetwork\').click({param: \'0\'}, getNodeInfo);"> </td>'+
                            '</tr>'+
                            '<tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>'+
                            '<tr><td colspan="2"><input type="button" value="change" onclick="newNode($(\'#nodelabel\').val(), $(\'#nodetypes\').val(), $(\'#posX\').val(), $(\'#posY\').val(), $(\'#fixed\').prop(\'checked\'), false)"/></td></tr>'+
@@ -553,10 +560,10 @@
                               '</td>'+
                             '</tr>'+
                            '<tr>'+
-                              '<td>From: <select id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\')">'+
+                              '<td>From: <select id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\', getNodeInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td><!--Hacer desplegable con todos los nodos-->'+
-                              '<td>To: <select id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\')">'+
+                              '<td>To: <select id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\', getNodeInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td>'+
                             '</tr>'+
@@ -583,10 +590,10 @@
                               '</td>'+
                             '</tr>'+
                            '<tr>'+
-                              '<td>From: <select id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\')">'+
+                              '<td>From: <select id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\', getNodeInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td><!--Hacer desplegable con todos los nodos-->'+
-                              '<td>To: <select id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\')">'+
+                              '<td>To: <select id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\', getNodeInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td>'+
                             '</tr>'+
@@ -603,9 +610,10 @@
                         id: Math.floor(Math.random()*1000000),
                         label: label,
                         group: group,
-                        x: posX,
-                        y: posY,
-                        fixed: fixed
+                        x: parseInt(posX),
+                        y: parseInt(posY),
+                        //fixed: fixed,
+                        physics: false
                     });
       }
       else{
@@ -614,9 +622,10 @@
                         id: $('#nodeId').val(),
                         label: label,
                         group: group,
-                        x: posX,
-                        y: posY,
-                        fixed: fixed
+                        x: parseInt(posX),
+                        y: parseInt(posY),
+                        //fixed: fixed
+                        physics: false
                     });
       }
     }
@@ -629,6 +638,55 @@
       $('#posX').val(posX);
       $('#posY').val(posY);
     }
+
+/* //cuando haces click selecciona un nodo cercano y lo hace móvil
+    function searchNearNode(ev){
+      var offset = $("#mynetwork").offset();
+      var posX = ev.clientX - offset.left - $("#mynetwork").width()/2;
+      var posY = ev.clientY - offset.top - $("#mynetwork").height()/2;
+      if(ev.type == 'mousedown'){
+        var positions = network.getPositions();
+        for (id in positions) {
+          var node = nodes._data[id];
+          if(Math.abs(posX-node.x)<18 && Math.abs(posY-node.y)<18){
+            console.log('down cerca de ' + node.label);
+            nodes.update({
+                          id: parseInt(node.id),
+                          label: node.label,
+                          group: node.group,
+                          x: node.x,
+                          y: node.y,
+                          fixed: false
+                      });
+            network.selectNodes([node.id]);
+            console.log(node.id+'id'+id);
+            $('#mynetwork').mouseup({param:node.id}, moveNode);
+          }
+        }
+      }
+    }*/
+/*
+    //donde sueltas un nodo lo coloca fijo otra vez
+    function moveNode(ev){
+      //var id = network.getSelectedNodes()[0];
+      //console.log(ev);
+      var offset = $("#mynetwork").offset();
+      var posX = ev.clientX - offset.left - $("#mynetwork").width()/2;
+      var posY = ev.clientY - offset.top - $("#mynetwork").height()/2;
+      var id = ev.data.param;
+      console.log(id);
+      var node = nodes._data[id];
+      console.log('up cerca de ' + node.label);
+      nodes.update({
+                          id: parseInt(node.id),
+                          label: node.label,
+                          group: node.group,
+                          x: parseInt(posX),
+                          y: parseInt(posY),
+                          fixed: true
+                      });
+      $('#mynetwork').off('mouseup');
+    }*/
 
     //presenta la información del nodo soble el que clickamos
     function getNodeInfo(ev){
@@ -671,8 +729,8 @@
               if (r == true) {
                 edges.add({
                   id: Math.floor(Math.random()*1000000),
-                  from: from,
-                  to: to,
+                  from: parseInt(from),
+                  to: parseInt(to),
                   width: 1,
                   label: label
                 });
@@ -680,8 +738,8 @@
         }else{
           edges.add({
                     id: Math.floor(Math.random()*1000000),
-                    from: from,
-                    to: to,
+                    from: parseInt(from),
+                    to: parseInt(to),
                     width: 1,
                     label: label
                   });
@@ -856,7 +914,7 @@
                         <li><a href="#" onclick="upload();" id="uploadnetwork">Upload</a></li>
                       </ul>
                     </div>-->
-                    <!--<button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>-->
+                    <!--<button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>onmousedown="searchNearNode(event)"-->
                   </div>
                 </div><!-- /.box-header -->
                 <div class="box-body">
@@ -864,7 +922,7 @@
                     <div class="col-md-12">
                       <div class="chart">
                         <!-- Network Canvas -->
-                        <div id="mynetwork" ondrop="drop(event)" ondragover="allowDrop(event)" class="col-md-12"></div>
+                        <div id="mynetwork" ondrop="drop(event)" ondragover="allowDrop(event)"  class="col-md-12"></div>
                         <div id="network-popUp">
                           <span id="operation">node</span> <br>
                           <table style="margin:auto;"><tr>
@@ -904,7 +962,7 @@
                           <input type="button" value="save" id="saveButton2" />
                           <input type="button" value="cancel" id="cancelButton2" />
                         </div>
-                        <!--<input type="file" id="fileinput" accept=".json" />-->
+                        <input type="file" id="fileinput" accept=".json" />
 
                       </div><!-- /.chart-responsive -->
                     </div><!-- /.col -->
