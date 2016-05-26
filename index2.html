@@ -104,6 +104,39 @@
       padding:10px;
       text-align: center;
     }
+    .inputfile {
+      width: 0.1px;
+      height: 0.1px;
+      opacity: 0;
+      overflow: hidden;
+      position: absolute;
+      z-index: -1;
+    }
+    .inputfile + label {
+        max-width: 80%;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: white;
+        background-color: #d3394c;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+        display: inline-block;
+        overflow: hidden;
+        padding: 0.625rem 1.25rem;
+    }
+
+    .inputfile:focus + label{
+      outline: 1px dotted #000;
+      outline: -webkit-focus-ring-color auto 5px;
+    }
+    .inputfile + label:hover {
+        background-color: #722040;
+    }
+
+
+
+
   </style>
   <script type="text/javascript" src="./exampleUtil.js"></script>
   <script type="text/javascript" src="./dist/vis.js"></script>
@@ -132,8 +165,29 @@
         //Definimos todas las opciones de la red
           var options = {
 
+            /*nodes: {
+              color: {
+                border: '#FFAA00',
+                  background: '#00FFAA',
+                highlight: {
+                  border: '#FFAA00',
+                  background: '#00FFAA'
+                },
+                hover: {
+                  border: '#FFAA00',
+                  background: '#00FFAA'
+                }
+              },
+            },*/
             edges: {
-              selectionWidth: function (width) {return width*1.5;} //Más ancho cuando seleccionado
+              selectionWidth: function (width) {return width*1.5;}, //Más ancho cuando seleccionado
+              color: {
+                //color:'#848484',
+                highlight:'#f39c12',
+                /*hover: '#848484',
+                inherit: 'from',
+                opacity:1.0*/
+              }
             },
 
           //Los distintos grupos a los que va a poder pertenecer nuestro nodo.
@@ -301,7 +355,7 @@
       network.on("dragEnd", function (params) {
         if(params.nodes[0]){
           var node = nodes._data[params.nodes[0]];
-          newNode(node.label, node.group, params.pointer.canvas.x, params.pointer.canvas.y, false, false);
+          newNode(params.nodes[0], node.label, node.group, params.pointer.canvas.x, params.pointer.canvas.y, false, false);
         }
         //console.log(JSON.stringify(params, null, 4));
         //console.log(params.nodes[0]);
@@ -351,12 +405,6 @@
       data.group = document.getElementById('node-group').value;
       clearPopUp();
       callback(data);
-    }
-
-
-    //Pendiente de crear
-    function edgeCreate(){
-      console.log("Nuevo pop-up")
     }
 
 
@@ -466,11 +514,11 @@
       var dataT = ev.dataTransfer.getData("text");
       var typeT = ev.dataTransfer.getData("type");
       if(typeT == "nodes-list"){
-        newNode(dataT, dataT, posX, posY, true, true);
+        newNode(null, dataT, dataT, posX, posY, true, true);
         
       }
       else{
-        edgeCreate();
+        //edgeCreate();
       }
     }
 
@@ -501,6 +549,9 @@
         $('#tablaConf').remove();
         $('#nodeCreator').append('<table id="tablaConf" style="margin:auto;">'+
                             '<tr>'+
+                              '<th colspan="2">Node Creator</th>'+
+                            '</tr>'+
+                            '<tr>'+
                               '<td>Node label: </td><td><input id="nodelabel" value="New node" /></td>'+
                             '</tr>'+
                             '<tr>'+
@@ -513,7 +564,7 @@
                               '<td>PosY: <input type="text" id="posY" value="" onfocus="$(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition)"> </td>'+
                            '</tr>'+
                            '<tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>'+
-                           '<tr><td colspan="2"><input type="button" value="create" onclick="newNode($(\'#nodelabel\').val(), $(\'#nodetypes\').val(), $(\'#posX\').val(), $(\'#posY\').val(), $(\'#fixed\').prop(\'checked\'), true)"/></td></tr>'+
+                           '<tr><td colspan="2"><input type="button" value="create" onclick="newNode(null, $(\'#nodelabel\').val(), $(\'#nodetypes\').val(), $(\'#posX\').val(), $(\'#posY\').val(), $(\'#fixed\').prop(\'checked\'), true)"/></td></tr>'+
                           '</table>');
         optionsRead();
         $('#posX').val(Math.floor($('#mynetwork').width()/2 - $('#mynetwork').width()*Math.random()));
@@ -523,6 +574,9 @@
       if(mode == 2){
         $('#tablaConf').remove();
         $('#nodeCreator').append('<table id="tablaConf" style="margin:auto;">'+
+                            '<tr>'+
+                              '<th colspan="2">Node Editor</th>'+
+                            '</tr>'+
                             '<!--Maybe allow choosing node id-->'+
                             '<tr>'+
                               '<td>Node label: </td><td><input id="nodelabel" value="New node" /><input type="hidden" id="nodeId"/></td>'+
@@ -533,15 +587,15 @@
                               '</td>'+
                            '</tr>'+
                            '<tr>'+
-                              '<td>PosX: <input type="text" id="posX" value="" onfocus="$(\'#mynetwork\').off(\'click\', getNodeInfo); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition); $(\'#mynetwork\').click({param: \'0\'}, getNodeInfo);"> </td>'+
-                              '<td>PosY: <input type="text" id="posY" value="" onfocus="$(\'#mynetwork\').off(\'click\', getNodeInfo); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\',getClickPosition); $(\'#mynetwork\').click({param: \'0\'}, getNodeInfo);"> </td>'+
+                              '<td>PosX: <input type="text" id="posX" value="" onfocus="$(\'#mynetwork\').off(\'click\', getElementInfo); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition); $(\'#mynetwork\').click({param: \'0\'}, getElementInfo);"> </td>'+
+                              '<td>PosY: <input type="text" id="posY" value="" onfocus="$(\'#mynetwork\').off(\'click\', getElementInfo); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\',getClickPosition); $(\'#mynetwork\').click({param: \'0\'}, getElementInfo);"> </td>'+
                            '</tr>'+
                            '<tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>'+
-                           '<tr><td colspan="2"><input type="button" value="change" onclick="newNode($(\'#nodelabel\').val(), $(\'#nodetypes\').val(), $(\'#posX\').val(), $(\'#posY\').val(), $(\'#fixed\').prop(\'checked\'), false)"/></td></tr>'+
+                           '<tr><td colspan="2"><input type="button" value="change" onclick="newNode(null, $(\'#nodelabel\').val(), $(\'#nodetypes\').val(), $(\'#posX\').val(), $(\'#posY\').val(), $(\'#fixed\').prop(\'checked\'), false)"/></td></tr>'+
                           '</table>');
         optionsRead();
         $('#mynetwork').off('click');
-        $('#mynetwork').click({param:'0'}, getNodeInfo);
+        $('#mynetwork').click({param:'0'}, getElementInfo);
         
       }
 
@@ -557,13 +611,15 @@
                             '<tr>'+
                               '<td>Edge\'s type</td><td><select id="edgetypes">'+
                               '<option selected value="0"> Choose an option </option>'+
+                              '<option value="1">Small</option>'+
+                              '<option value="5">Large</option>'+
                               '</td>'+
                             '</tr>'+
                            '<tr>'+
-                              '<td>From: <select id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\', getNodeInfo)">'+
+                              '<td>From: <select id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td><!--Hacer desplegable con todos los nodos-->'+
-                              '<td>To: <select id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\', getNodeInfo)">'+
+                              '<td>To: <select id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td>'+
                             '</tr>'+
@@ -579,32 +635,37 @@
         $('#tablaConf').remove();
         $('#nodeCreator').append('<table id="tablaConf" style="margin:auto;">'+
                             '<tr>'+
-                              '<th colspan="2">Edge Creator</th>'+
+                              '<th colspan="2">Edge Editor</th>'+
                             '</tr>'+
                             '<tr>'+
-                              '<td>Edge label: </td><td><input id="edge-label" value="New edge" /></td>'+
+                              '<td>Edge label: </td><td><input id="edge-label" value="" /><input type="hidden" id="edgeId"/></td>'+
                             '</tr>'+
                             '<tr>'+
                               '<td>Edge\'s type</td><td><select id="edgetypes">'+
                               '<option selected value="0"> Choose an option </option>'+
+                              '<option value="1">Small</option>'+
+                              '<option value="5">Large</option>'+
                               '</td>'+
                             '</tr>'+
                            '<tr>'+
-                              '<td>From: <select id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\', getNodeInfo)">'+
+                              '<td>From: <select id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td><!--Hacer desplegable con todos los nodos-->'+
-                              '<td>To: <select id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getNodeInfo);" onblur="$(\'#mynetwork\').off(\'click\', getNodeInfo)">'+
+                              '<td>To: <select id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td>'+
                             '</tr>'+
-                            '<tr><td><input type="button" value="create"  onclick="newEdge($(\'#edge-from :selected\').val(), $(\'#edge-to :selected\').val(), $(\'#edgetypes :selected\').val(), $(\'#edge-label\').val(), false)"/></td></tr>'+
+                            '<tr><td><input type="button" value="change"  onclick="newEdge($(\'#edge-from :selected\').val(), $(\'#edge-to :selected\').val(), $(\'#edgetypes :selected\').val(), $(\'#edge-label\').val(), false)"/></td></tr>'+
                           '</table>');
+        $('#mynetwork').off('click');
+        $('#mynetwork').click({param:'3'}, getElementInfo);
         nodes.on('*', listNodes);
       }
     }
 
-    //Añade un nuevo nodo a la red
-    function newNode(label, group, posX, posY, fixed, isNew){
+    //Añade un nuevo nodo a la red, el campo id se emplea para poder modificar la posición de un nodo existente durante el arrastre.
+    //El campo isNew indica si se quiere crear o actualizar un nodo.
+    function newNode(id, label, group, posX, posY, fixed, isNew){
       if(isNew){
         nodes.add({
                         id: Math.floor(Math.random()*1000000),
@@ -617,9 +678,12 @@
                     });
       }
       else{
+        if(id==null){
+         var id = $('#nodeId').val()
+        }
         nodeid = $('#nodeId');
         nodes.update({
-                        id: $('#nodeId').val(),
+                        id: id,
                         label: label,
                         group: group,
                         x: parseInt(posX),
@@ -688,8 +752,11 @@
       $('#mynetwork').off('mouseup');
     }*/
 
-    //presenta la información del nodo soble el que clickamos
-    function getNodeInfo(ev){
+    //Presenta la información del elemento soble el que clickamos
+    //Si el parámetro es 0 presentamos un nodo en su editor,
+    //si es 1 presentamos un nodo en el creador de enlaces campo 'to', si es 2 campo 'from'.
+    //Si es 3 presentamos un enlace.
+    function getElementInfo(ev){
         var id = network.getSelectedNodes()[0];
         var node = nodes._data[id];
         var idedge = network.getSelectedEdges()[0];
@@ -709,14 +776,23 @@
         if(ev.data.param == 1){
 
           if(id){
-            console.log(id+' from')
+            //console.log(id+' from')
             $('#edge-from').val(id);
           }
         }
         if(ev.data.param == 2){
           if(id){
-            console.log(id+' to')
+            //console.log(id+' to')
             $('#edge-to').val(id);  
+          }
+        }
+        if(ev.data.param == 3){
+          if(edge && !node){
+            $('#edgeId').val(idedge);
+            $('#edge-label').val(edge.label);
+            $('#edgetypes').val(1);
+            $('#edge-to').val(edge.to);
+            $('#edge-from').val(edge.from);
           }
         }
     }
@@ -731,7 +807,7 @@
                   id: Math.floor(Math.random()*1000000),
                   from: parseInt(from),
                   to: parseInt(to),
-                  width: 1,
+                  width: parseInt(type),
                   label: label
                 });
               }
@@ -740,12 +816,33 @@
                     id: Math.floor(Math.random()*1000000),
                     from: parseInt(from),
                     to: parseInt(to),
-                    width: 1,
+                    width: parseInt(type),
                     label: label
                   });
         }        
       }else{
-
+        var id = $('#edgeId').val();
+        console.log(id);
+        if (from == to) {
+              var r = confirm("Do you want to connect the node to itself?");
+              if (r == true) {
+                edges.update({
+                  id: id,
+                  from: parseInt(from),
+                  to: parseInt(to),
+                  width: parseInt(type),
+                  label: label
+                });
+              }
+        }else{
+          edges.update({
+                    id: id,
+                    from: parseInt(from),
+                    to: parseInt(to),
+                    width: parseInt(type),
+                    label: label
+                  });
+        }
       }
     }
 
@@ -903,8 +1000,12 @@
                 <div class="box-header with-border">
                   <h3 class="box-title">Network manipulation</h3>
                   <div class="box-tools pull-right">
-                    <button class="btn btn-box-tool" onclick="upload();" id="uploadnetwork"><i class="fa fa-upload"></i></button>
-                    <button class="btn btn-box-tool"><a href="#" onclick="downloadJson();" id="downloadnetwork"><i class="fa fa-floppy-o"></i></a></button>
+                    <button class="btn btn-box-tool dropdown-toggle" data-toggle="dropdown" onclick="upload();" id="uploadnetwork"><i class="fa fa-upload"></i></button>
+                        <ul class="dropdown-menu" role="menu">
+                          <li><input type="file" id="fileinput" accept=".json" class="inputfile"/>
+                          <label for="fileinput">Choose a file</label></li>
+                        </ul>
+                    <button class="btn btn-box-tool"><a href="#" onclick="downloadJson();" id="downloadnetwork" class="file-loading"><i class="fa fa-floppy-o"></i></a></button>
                     <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
                     <!--<div class="btn-group">
                       <button class="btn btn-box-tool dropdown-toggle" data-toggle="dropdown"><i class="fa fa-upload"></i></button>
@@ -962,8 +1063,6 @@
                           <input type="button" value="save" id="saveButton2" />
                           <input type="button" value="cancel" id="cancelButton2" />
                         </div>
-                        <input type="file" id="fileinput" accept=".json" />
-
                       </div><!-- /.chart-responsive -->
                     </div><!-- /.col -->
                    </div><!-- /.row -->
@@ -1017,7 +1116,7 @@
                               <td>posY: <input type="text" id="posY" value="" onfocus="$('#mynetwork').click(getClickPosition);" onblur="$('#mynetwork').off('click')"> </td>
                            </tr>
                            <tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>
-                           <tr><td colspan="2"><input type="button" value="create" onclick="newNode($('#nodelabel').val(), $('#nodetypes').val(), $('#posX').val(), $('#posY').val(), $('#fixed').prop('checked'), true)"/></td></tr>
+                           <tr><td colspan="2"><input type="button" value="create" onclick="newNode(null, $('#nodelabel').val(), $('#nodetypes').val(), $('#posX').val(), $('#posY').val(), $('#fixed').prop('checked'), true)"/></td></tr>
                           </table>
                           </div>
                         </div>
