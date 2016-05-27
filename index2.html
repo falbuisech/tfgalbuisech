@@ -6,6 +6,8 @@
     <title>Network Manipulation</title>
     <!-- JQuery -->
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+    <!-- d3 -->
+    <script src="plugins/d3/d3.js"></script>
     <!-- Tell the browser to be responsive to screen width -->
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
     <!-- Bootstrap 3.3.5 -->
@@ -150,6 +152,7 @@
     var edges = new vis.DataSet();
     var network = null;
     var data = null;
+    var dataup = null;
     var optcontainer = document.getElementById('config');
     
     //var data = getScaleFreeNetwork(3);
@@ -159,6 +162,7 @@
       if (network !== null) {
         network.destroy();
         network = null;
+        //data = null;
       }
     }
 
@@ -191,7 +195,7 @@
             },
 
           //Los distintos grupos a los que va a poder pertenecer nuestro nodo.
-          groups: {
+          groups: {},/*
           usergroup: {
             shape: 'icon',
             icon: {
@@ -273,7 +277,7 @@
               color: '#aa00ff'
             }
           }
-        },
+        },*/
         configure: false,         
         
 
@@ -333,24 +337,58 @@
 
       };
 
+      function loadGroups(){
+          d3.csv('Groups.csv',function(err,csv){
+            var csvdata = csv.sort(function(a,b){
+              if(a.name > b.name) return -1;
+              if(a.name<b.name) return 1;
+              return 0;
+            })
+            for (var i = csvdata.length - 1; i >= 0; i--) {
+              //console.log(String.fromCodePoint(+csvdata[i].code).codePointAt(0));
+              //var code = '\uf'+ csvdata[i].code;
+              //console.log(code);
+              
+              var group = {
+                shape: csvdata[i].shape,
+                  icon: {
+                    face: csvdata[i].face,
+                    code: String.fromCodePoint(csvdata[i].code),
+                    size: parseInt(csvdata[i].size),
+                    color: csvdata[i].color
+                  }
+                }
+              //csvdata[i].name;
+              //console.log(group);
+              //console.log(options.groups[csvdata[i].name] == group);
+              options.groups[csvdata[i].name] = group;
+            };
+            draw();
+            optionsRead();
+        });
+          console.log('voy a pintar');
+          
+      }
+
     //Pintamos nuestra red borrando todo y cargando datos en el caso de haberlos.
     function draw() {
+      //console.log(options);
+        //console.log(dataup);
       //optionsRead();//"nodes-list");
       destroy();
       nodes.clear();
       edges.clear();
-      if(data){
-        nodes.add(data.nodes);
-        edges.add(data.edges);
+      if(dataup){
+        nodes.add(dataup.nodes);
+        edges.add(dataup.edges);
+        dataup = null;
       }
-
         data = {
                   nodes: nodes,
                   edges: edges
               };
       // create a network
       var container = document.getElementById('mynetwork');
-
       network = new vis.Network(container, data, options);
       network.on("dragEnd", function (params) {
         if(params.nodes[0]){
@@ -448,7 +486,7 @@
           //console.log(reader.result.nodes);
           var resultado = JSON.parse(reader.result);
           //console.log(resultado);
-          data = resultado;
+          dataup = resultado;
           //console.log(data.nodes);
           draw();
         };
@@ -469,7 +507,7 @@
           //console.log(reader.result.nodes);
           var resultado = JSON.parse(reader.result);
           //console.log(resultado);
-          data = resultado;
+          dataup = resultado;
           //console.log(data);
           //Pintamos los nuevos datos
           draw();
@@ -872,7 +910,7 @@
 
   </script>
   </head>
-  <body class="hold-transition skin-blue sidebar-mini" onload="draw(); optionsRead();">
+  <body class="hold-transition skin-blue sidebar-mini" onload="loadGroups();">
     <div class="wrapper">
 
       <header class="main-header">
@@ -1003,7 +1041,7 @@
                     <button class="btn btn-box-tool dropdown-toggle" data-toggle="dropdown" onclick="upload();" id="uploadnetwork"><i class="fa fa-upload"></i></button>
                         <ul class="dropdown-menu" role="menu">
                           <li><input type="file" id="fileinput" accept=".json" class="inputfile"/>
-                          <label for="fileinput">Choose a file</label></li>
+                          <label for="fileinput" class="col-md-12">Choose a file</label></li>
                         </ul>
                     <button class="btn btn-box-tool"><a href="#" onclick="downloadJson();" id="downloadnetwork" class="file-loading"><i class="fa fa-floppy-o"></i></a></button>
                     <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
@@ -1224,7 +1262,9 @@
 
 
     <!-- jQuery 2.1.4 -->
-    <script src="plugins/jQuery/jQuery-2.1.4.min.js"></script>
+    <script src="plugins/jQuery/jQuery-2.1.4.min.js"></script>   
+    <!-- d3 -->
+    <script src="plugins/d3/d3.js"></script>
     <!-- Bootstrap 3.3.5 -->
     <script src="bootstrap/js/bootstrap.min.js"></script>
     <!-- FastClick -->
@@ -1245,5 +1285,6 @@
     <!-- AdminLTE for demo purposes -->
     <script src="dist/js/demo.js"></script>
     <script src="./cycle.js"></script>
+    
   </body>
 </html>

@@ -1,0 +1,11 @@
+name,shape,face,code,size,color
+usergroup,icon,FontAwesome,0xf0c0,35,"#57169a"
+user,icon,FontAwesome,0xf007,35,"#aa00ff"
+desktop,icon,FontAwesome,0xf108,35,"#aa00ff"
+windows,icon,FontAwesome,0xf17a,35,"#aa00ff"
+linux,icon,FontAwesome,0xf17c,35,"#aa00ff"
+osx,icon,FontAwesome,0xf179,35,"#aa00ff"
+android,icon,FontAwesome,0xf17b,35,"#aa00ff"
+wifi,icon,FontAwesome,0xf1eb,35,"#aa00ff"
+database,icon,FontAwesome,0xf1c0,35,"#aa00ff"
+media_server,icon,FontAwesome,0xf007,35,"#aa00ff"
