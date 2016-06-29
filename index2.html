@@ -184,10 +184,10 @@
               },
             },*/
             edges: {
-              selectionWidth: function (width) {return width*1.5;}, //Más ancho cuando seleccionado
+              selectionWidth: function (width) {return width*2;}, //Más ancho cuando seleccionado
               color: {
-                //color:'#848484',
-                highlight:'#f39c12',
+                color:'#aa00ff',
+                highlight:'#00ffaa',
                 /*hover: '#848484',
                 inherit: 'from',
                 opacity:1.0*/
@@ -279,13 +279,32 @@
           }
         },*/
         configure: false,         
-        
+        interaction:{
+          dragNodes:true,
+          dragView: true,
+          hideEdgesOnDrag: false,
+          hideNodesOnDrag: false,
+          hover: false,
+          hoverConnectedEdges: true,
+          keyboard: {
+            enabled: true,
+            speed: {x: 10, y: 10, zoom: 0.02},
+            bindToWindow: true
+          },
+          multiselect: false,
+          navigationButtons: true,
+          selectable: true,
+          selectConnectedEdges: true,
+          tooltipDelay: 300,
+          zoomView: true
+        },
 
         //layout: {randomSeed:seed}, // just to make sure the layout is the same when the locale is changed
         //locale: document.getElementById('locale').value,
 
         //Elementos de manipulación para añadir o modificar nodos y enlaces.
         manipulation: {
+          initiallyActive: true,
           addNode: function (data, callback) {
             // filling in the popup DOM elements
             document.getElementById('operation').innerHTML = "Add Node";
@@ -308,16 +327,18 @@
             document.getElementById('network-popUp').style.display = 'block';
           },
           addEdge: function (data, callback) {
+            data.label = "";
+            data.width = 1;
             if (data.from == data.to) {
               var r = confirm("Do you want to connect the node to itself?");
               if (r == true) {
-                edgeAdd(data, callback);
-                //callback(data);
+                //edgeAdd(data, callback);
+                callback(data);
               }
             }
             else {
-             edgeAdd(data, callback);
-              //callback(data);
+              //edgeAdd(data, callback);
+              callback(data);
             }
           },
           editEdge: function (data, callback) {//introducir numero y que sea label y ancho
@@ -393,7 +414,7 @@
       network.on("dragEnd", function (params) {
         if(params.nodes[0]){
           var node = nodes._data[params.nodes[0]];
-          newNode(params.nodes[0], node.label, node.group, params.pointer.canvas.x, params.pointer.canvas.y, false, false);
+          newNode(params.nodes[0], node.label, node.group, params.pointer.canvas.x, params.pointer.canvas.y, node.title, false);
         }
         //console.log(JSON.stringify(params, null, 4));
         //console.log(params.nodes[0]);
@@ -413,7 +434,7 @@
     function edgeEdit(data, callback){
       document.getElementById('operation').innerHTML = "Edit Edge";
       //document.getElementById('node-id').value = data.id;
-      document.getElementById('edge-label').value = data.label || "";
+      document.getElementById('edgelabel').value = data.label || "";
       document.getElementById('edge-width').value = data.width || 1;
       document.getElementById('saveButton2').onclick = saveEdge.bind(this, data, callback);
       document.getElementById('cancelButton2').onclick = cancelEdit.bind(this,callback);
@@ -453,6 +474,7 @@
       var edges = "";
       var narray = Object.keys(network.body.data.nodes._data);
       var earray = Object.keys(network.body.data.edges._data);
+      //JSON.stringify(nodes.get({returnType: Object})) lo sigue devolviendo mal
 
       for (i = narray.length; i--; i>=0){
         nodes += JSON.stringify(JSON.decycle(network.body.data.nodes._data[narray[i]]));
@@ -469,7 +491,9 @@
       
       var descarga = '{"nodes":[' + nodes + '],"edges":[' + edges + ']}';
       var filename = prompt("Please name your file", "network")
-      saveAsFile(document.getElementById('downloadnetwork'), descarga, filename )
+      if(filename){
+        saveAsFile(document.getElementById('downloadnetwork'), descarga, filename );
+      }
 
     }
 
@@ -480,22 +504,22 @@
 
           if (file) {
               //  getAsText(file);
-          //console.log("bien de momento")
-          var reader = new FileReader();
-         reader.onload = function(){
-          //console.log(reader.result.nodes);
-          var resultado = JSON.parse(reader.result);
-          //console.log(resultado);
-          dataup = resultado;
-          //console.log(data.nodes);
-          draw();
-        };
-        reader.readAsText(file);
-
-          
-}          evt.stopPropagation();
+            //console.log("bien de momento")
+            var reader = new FileReader();
+            reader.onload = function(){
+              //console.log(reader.result.nodes);
+              var resultado = JSON.parse(reader.result);
+              //console.log(resultado);
+              dataup = resultado;
+              //console.log(data.nodes);
+              draw();
+            };
+            reader.readAsText(file);
+          }
+          evt.stopPropagation();
           evt.preventDefault();
         }
+
         var dropingDiv = document.getElementById("mynetwork");
         dropingDiv.addEventListener("dragover", function(event){event.stopPropagation();event.preventDefault();}, false);
         dropingDiv.addEventListener("drop", startReadFromDrag, false);
@@ -552,7 +576,7 @@
       var dataT = ev.dataTransfer.getData("text");
       var typeT = ev.dataTransfer.getData("type");
       if(typeT == "nodes-list"){
-        newNode(null, dataT, dataT, posX, posY, true, true);
+        newNode(null, dataT, dataT, posX, posY, "", true);
         
       }
       else{
@@ -563,6 +587,7 @@
     //Generar en la barra lateral todos los tipos de nodos como lista.
     function optionsRead(){//type){
       $('#nodes-list').empty();
+      
       for(id in options.groups){
         //console.log('<li id="'+id+'" class="active" draggable="true" ondragstart="drag(event)"><a><i class="fa fa-circle-o"></i>'+id+'</a></li>');
         $("#nodetypes").append(
@@ -585,24 +610,27 @@
       if(mode == 1){
 
         $('#tablaConf').remove();
-        $('#nodeCreator').append('<table id="tablaConf" style="margin:auto;">'+
+        $('#nodeCreator').append('<table class="table table-bordered" id="tablaConf" style="margin:auto;">'+
                             '<tr>'+
-                              '<th colspan="2">Node Creator</th>'+
+                              '<th colspan="2"><h4 class="text-center">Node Creator</h4></th>'+
                             '</tr>'+
                             '<tr>'+
-                              '<td>Node label: </td><td><input id="nodelabel" value="New node" /></td>'+
+                              '<td>Node label: </td><td><input class="form-control" id="nodelabel" value="New node" /></td>'+
                             '</tr>'+
                             '<tr>'+
-                              '<td colspan="2">Node\'s type:  <select id="nodetypes">'+
+                              '<td>Node title: </td><td><input class="form-control" id="nodetitle" value="" /></td>'+
+                            '</tr>'+
+                            '<tr>'+
+                              '<td colspan="2">Node\'s type:  <select class="form-control" id="nodetypes">'+
                               '<option selected value="0"> Choose an option </option>'+
                               '</td>'+
                            '</tr>'+
                            '<tr>'+
-                              '<td>PosX: <input type="text" id="posX" value="" onfocus="$(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition)"> </td>'+
-                              '<td>PosY: <input type="text" id="posY" value="" onfocus="$(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition)"> </td>'+
+                              '<td>PosX: <input type="text" id="posX" class="form-control" value="" onfocus="$(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition)"> </td>'+
+                              '<td>PosY: <input type="text" id="posY" class="form-control" value="" onfocus="$(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition)"> </td>'+
                            '</tr>'+
-                           '<tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>'+
-                           '<tr><td colspan="2"><input type="button" value="create" onclick="newNode(null, $(\'#nodelabel\').val(), $(\'#nodetypes\').val(), $(\'#posX\').val(), $(\'#posY\').val(), $(\'#fixed\').prop(\'checked\'), true)"/></td></tr>'+
+                           //'<tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>'+
+                           '<tr><td colspan="2"><input type="button" class="btn btn-block btn-primary" value="create" onclick="newNode(null, $(\'#nodelabel\').val(), $(\'#nodetypes\').val(), $(\'#posX\').val(), $(\'#posY\').val(), $(\'#nodetitle\').val(), true)"/></td></tr>'+
                           '</table>');
         optionsRead();
         $('#posX').val(Math.floor($('#mynetwork').width()/2 - $('#mynetwork').width()*Math.random()));
@@ -611,25 +639,27 @@
 
       if(mode == 2){
         $('#tablaConf').remove();
-        $('#nodeCreator').append('<table id="tablaConf" style="margin:auto;">'+
+        $('#nodeCreator').append('<table class="table table-bordered" id="tablaConf" style="margin:auto;">'+
                             '<tr>'+
-                              '<th colspan="2">Node Editor</th>'+
-                            '</tr>'+
-                            '<!--Maybe allow choosing node id-->'+
-                            '<tr>'+
-                              '<td>Node label: </td><td><input id="nodelabel" value="New node" /><input type="hidden" id="nodeId"/></td>'+
+                              '<th colspan="2"><h4 class="text-center">Node Editor</h4></th>'+
                             '</tr>'+
                             '<tr>'+
-                              '<td colspan="2">Node\'s type:  <select id="nodetypes">'+
+                              '<td>Node label: </td><td><input class="form-control" id="nodelabel" value="Old node" /><input type="hidden" id="nodeId"/></td>'+
+                            '</tr>'+
+                            '<tr>'+
+                              '<td>Node title: </td><td><input class="form-control" id="nodetitle" value="" /></td>'+
+                            '</tr>'+
+                            '<tr>'+
+                              '<td colspan="2">Node\'s type:  <select class="form-control" id="nodetypes">'+
                               '<option selected value="0"> Choose an option </option>'+
                               '</td>'+
                            '</tr>'+
                            '<tr>'+
-                              '<td>PosX: <input type="text" id="posX" value="" onfocus="$(\'#mynetwork\').off(\'click\', getElementInfo); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition); $(\'#mynetwork\').click({param: \'0\'}, getElementInfo);"> </td>'+
-                              '<td>PosY: <input type="text" id="posY" value="" onfocus="$(\'#mynetwork\').off(\'click\', getElementInfo); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\',getClickPosition); $(\'#mynetwork\').click({param: \'0\'}, getElementInfo);"> </td>'+
+                              '<td>PosX: <input type="text" id="posX" class="form-control" value="" onfocus="$(\'#mynetwork\').off(\'click\', getElementInfo); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\', getClickPosition); $(\'#mynetwork\').click({param: \'0\'}, getElementInfo);"> </td>'+
+                              '<td>PosY: <input type="text" id="posY" class="form-control" value="" onfocus="$(\'#mynetwork\').off(\'click\', getElementInfo); $(\'#mynetwork\').click(getClickPosition);" onblur="$(\'#mynetwork\').off(\'click\',getClickPosition); $(\'#mynetwork\').click({param: \'0\'}, getElementInfo);"> </td>'+
                            '</tr>'+
-                           '<tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>'+
-                           '<tr><td colspan="2"><input type="button" value="change" onclick="newNode(null, $(\'#nodelabel\').val(), $(\'#nodetypes\').val(), $(\'#posX\').val(), $(\'#posY\').val(), $(\'#fixed\').prop(\'checked\'), false)"/></td></tr>'+
+                           //'<tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>'+
+                           '<tr><td colspan="2"><input type="button" class="btn btn-block btn-primary" value="change" onclick="newNode(null, $(\'#nodelabel\').val(), $(\'#nodetypes\').val(), $(\'#posX\').val(), $(\'#posY\').val(), $(\'#nodetitle\').val(), false)"/></td></tr>'+
                           '</table>');
         optionsRead();
         $('#mynetwork').off('click');
@@ -639,29 +669,29 @@
 
       if(mode == 3){
         $('#tablaConf').remove();
-        $('#nodeCreator').append('<table id="tablaConf" style="margin:auto;">'+
+        $('#nodeCreator').append('<table class="table table-bordered" id="tablaConf" style="margin:auto;">'+
                             '<tr>'+
-                              '<th colspan="2">Edge Creator</th>'+
+                              '<th colspan="2"><h4 class="text-center">Edge Creator</h4></th>'+
                             '</tr>'+
                             '<tr>'+
-                              '<td>Edge label: </td><td><input id="edge-label" value="New edge" /></td>'+
+                              '<td>Edge label: </td><td><input class="form-control" id="edgelabel" value="New edge" /></td>'+
                             '</tr>'+
                             '<tr>'+
-                              '<td>Edge\'s type</td><td><select id="edgetypes">'+
+                              '<td>Edge\'s type</td><td><select class="form-control" id="edgetypes">'+
                               '<option selected value="0"> Choose an option </option>'+
                               '<option value="1">Small</option>'+
                               '<option value="5">Large</option>'+
                               '</td>'+
                             '</tr>'+
                            '<tr>'+
-                              '<td>From: <select id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
+                              '<td>From: <select class="form-control" id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td><!--Hacer desplegable con todos los nodos-->'+
-                              '<td>To: <select id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
+                              '<td>To: <select class="form-control" id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td>'+
                             '</tr>'+
-                            '<tr><td><input type="button" value="create"  onclick="newEdge($(\'#edge-from :selected\').val(), $(\'#edge-to :selected\').val(), $(\'#edgetypes :selected\').val(), $(\'#edge-label\').val(), true)"/></td></tr>'+
+                            '<tr><td colspan="2"><input type="button" class="btn btn-block btn-primary" value="create"  onclick="newEdge($(\'#edge-from :selected\').val(), $(\'#edge-to :selected\').val(), $(\'#edgetypes :selected\').val(), $(\'#edgelabel\').val(), true)"/></td></tr>'+
                           '</table>');
         nodes.on('*', listNodes);
         
@@ -671,29 +701,29 @@
       }
       if(mode == 4){
         $('#tablaConf').remove();
-        $('#nodeCreator').append('<table id="tablaConf" style="margin:auto;">'+
+        $('#nodeCreator').append('<table class="table table-bordered" id="tablaConf" style="margin:auto;">'+
                             '<tr>'+
-                              '<th colspan="2">Edge Editor</th>'+
+                              '<th colspan="2"><h4 class="text-center">Edge Editor</h4></th>'+
                             '</tr>'+
                             '<tr>'+
-                              '<td>Edge label: </td><td><input id="edge-label" value="" /><input type="hidden" id="edgeId"/></td>'+
+                              '<td>Edge label: </td><td><input class="form-control" id="edgelabel" value="" /><input type="hidden" id="edgeId"/></td>'+
                             '</tr>'+
                             '<tr>'+
-                              '<td>Edge\'s type</td><td><select id="edgetypes">'+
+                              '<td>Edge\'s type</td><td><select class="form-control" id="edgetypes">'+
                               '<option selected value="0"> Choose an option </option>'+
                               '<option value="1">Small</option>'+
                               '<option value="5">Large</option>'+
                               '</td>'+
                             '</tr>'+
                            '<tr>'+
-                              '<td>From: <select id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
+                              '<td>From: <select class="form-control" id="edge-from" onfocus="$(\'#mynetwork\').click({param:\'1\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td><!--Hacer desplegable con todos los nodos-->'+
-                              '<td>To: <select id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
+                              '<td>To: <select class="form-control" id="edge-to" onfocus="$(\'#mynetwork\').click({param:\'2\'}, getElementInfo);" onblur="$(\'#mynetwork\').off(\'click\', getElementInfo)">'+
                                 '<option selected value="0"> Choose an option </option>'+
                               '</td>'+
                             '</tr>'+
-                            '<tr><td><input type="button" value="change"  onclick="newEdge($(\'#edge-from :selected\').val(), $(\'#edge-to :selected\').val(), $(\'#edgetypes :selected\').val(), $(\'#edge-label\').val(), false)"/></td></tr>'+
+                            '<tr><td colspan="2"><input type="button" class="btn btn-block btn-primary" value="change"  onclick="newEdge($(\'#edge-from :selected\').val(), $(\'#edge-to :selected\').val(), $(\'#edgetypes :selected\').val(), $(\'#edgelabel\').val(), false)"/></td></tr>'+
                           '</table>');
         $('#mynetwork').off('click');
         $('#mynetwork').click({param:'3'}, getElementInfo);
@@ -703,7 +733,7 @@
 
     //Añade un nuevo nodo a la red, el campo id se emplea para poder modificar la posición de un nodo existente durante el arrastre.
     //El campo isNew indica si se quiere crear o actualizar un nodo.
-    function newNode(id, label, group, posX, posY, fixed, isNew){
+    function newNode(id, label, group, posX, posY, title, isNew){
       if(isNew){
         nodes.add({
                         id: Math.floor(Math.random()*1000000),
@@ -711,7 +741,7 @@
                         group: group,
                         x: parseInt(posX),
                         y: parseInt(posY),
-                        //fixed: fixed,
+                        title: title,
                         physics: false
                     });
       }
@@ -726,7 +756,7 @@
                         group: group,
                         x: parseInt(posX),
                         y: parseInt(posY),
-                        //fixed: fixed
+                        title: title,
                         physics: false
                     });
       }
@@ -808,6 +838,7 @@
             $('#posX').val(node.x);
             $('#posY').val(node.y);
             $('#nodetypes').val(node.group);
+            $('#nodetitle').val(node.title);
             $('#fixed').prop('checked', node.fixed);
           }
         }
@@ -827,7 +858,7 @@
         if(ev.data.param == 3){
           if(edge && !node){
             $('#edgeId').val(idedge);
-            $('#edge-label').val(edge.label);
+            $('#edgelabel').val(edge.label);
             $('#edgetypes').val(1);
             $('#edge-to').val(edge.to);
             $('#edge-from').val(edge.from);
@@ -836,7 +867,7 @@
     }
 
     function newEdge(from, to, type, label, isNew){
-      //console.log("from "+from+" to " + to + "  label "+label)
+      console.log("from "+from+" to " + to + "  label "+label)
       if(isNew){
         if (from == to) {
               var r = confirm("Do you want to connect the node to itself?");
@@ -984,14 +1015,14 @@
           <!-- sidebar menu: : style can be found in sidebar.less -->
           <ul class="sidebar-menu">
             <li class="header">MAIN NAVIGATION</li>
-            <li class="active treeview">
+            <!--<li class="active treeview">
               <a href="#">
                 <i class="fa fa-dashboard"></i> <span>Dashboard</span> <i class="fa fa-angle-left pull-right"></i>
               </a>
               <ul class="treeview-menu">
                  <li class="active"><a href="index2.html"><i class="fa fa-circle-o"></i> Dashboard v2</a></li>
               </ul>
-            </li>
+            </li>-->
             <li class="active treeview">
               <a>
                 <i class="fa fa-dashboard"></i> <span>Nodos</span> <i class="fa fa-angle-left pull-right"></i>
@@ -1001,14 +1032,14 @@
                  <li id="windows" class="active"  draggable="true" ondragstart="drag(event)"><a><i class="fa fa-circle-o"></i> Buendows</a></li>-->
               </ul>
             </li>
-            <li class="active treeview">
+            <!--<li class="active treeview">
               <a>
                 <i class="fa fa-dashboard"></i> <span>Enlaces</span> <i class="fa fa-angle-left pull-right"></i>
               </a>
               <ul class="treeview-menu" id="edges-list">
                  <li id="edge" class="active" draggable="true" ondragstart="drag(event)"><a><i class="fa fa-circle-o"></i> Enlace Simple</a></li>
               </ul>
-            </li>
+            </li>-->
           </ul>
         </section>
         <!-- /.sidebar -->
@@ -1065,13 +1096,13 @@
                         <div id="network-popUp">
                           <span id="operation">node</span> <br>
                           <table style="margin:auto;"><tr>
-                            <td>id</td><td><input id="node-id" value="new value" /></td>
+                            <td>id</td><td><input class="form-control" id="node-id" value="new value" /></td>
                           </tr>
                             <tr>
-                              <td>label</td><td><input id="node-label" value="new value" /></td>
+                              <td>label</td><td><input class="form-control" id="node-label" value="new value" /></td>
                             </tr>
                             <tr>
-                              <td>type</td><td><select id="node-group">
+                              <td>type</td><td><select class="form-control" id="node-group">
                            <option selected value="0"> Choose an option </option>
                                <optgroup label="Microsoft"> 
                                <option value="windows">Windows Vista</option> 
@@ -1093,10 +1124,10 @@
                           <span id="operation">edge</span> <br>
                           <table style="margin:auto;">
                             <tr>
-                              <td>label</td><td><input id="edge-label" value="" /></td>
+                              <td>label</td><td><input class="form-control" id="edgelabel" value="" /></td>
                             </tr>
                             <tr>
-                              <td>type</td><td><input id="edge-width" value="1" /></td>
+                              <td>type</td><td><input class="form-control" id="edge-width" value="1" /></td>
                             </tr></table>
                           <input type="button" value="save" id="saveButton2" />
                           <input type="button" value="cancel" id="cancelButton2" />
@@ -1139,22 +1170,28 @@
                         <!-- Tools Canvas -->
                         <div id="nodeCreator">
                           <div id="config">
-                          <table id="tablaConf" style="margin:auto;">
+                          <table id="tablaConf" class="table table-bordered" style="margin:auto;">
                             <!--Maybe allow choosing node id-->
                             <tr>
-                              <td>Node label: </td><td><input id="nodelabel" value="New node" /></td>
+                              <th colspan="2"><h4 class="text-center">Node Creator</h4></th>
                             </tr>
                             <tr>
-                              <td colspan="2">Node's type:  <select id="nodetypes">
+                              <td>Node label: </td><td><input class="form-control" id="nodelabel" value="New node" /></td>
+                            </tr>
+                            <tr>
+                              <td>Node title: </td><td><input class="form-control" id="nodetitle" value="New title" /></td>
+                            </tr>
+                            <tr>
+                              <td colspan="2"><label class="control-label">Node's type:  </label><select class="form-control" id="nodetypes" class="form-control">
                               <option selected value="0"> Choose an option </option>
                               </td>
                            </tr>
                            <tr>
-                              <td>PosX: <input type="text" id="posX" value="" onfocus="$('#mynetwork').click(getClickPosition);" onblur="$('#mynetwork').off('click')"> </td>
-                              <td>posY: <input type="text" id="posY" value="" onfocus="$('#mynetwork').click(getClickPosition);" onblur="$('#mynetwork').off('click')"> </td>
+                              <td>PosX: <input class="form-control" type="text" id="posX" class="form-control" value="" onfocus="$('#mynetwork').click(getClickPosition);" onblur="$('#mynetwork').off('click')"> </td>
+                              <td>PosY: <input class="form-control" type="text" id="posY" class="form-control" value="" onfocus="$('#mynetwork').click(getClickPosition);" onblur="$('#mynetwork').off('click')"> </td>
                            </tr>
-                           <tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>
-                           <tr><td colspan="2"><input type="button" value="create" onclick="newNode(null, $('#nodelabel').val(), $('#nodetypes').val(), $('#posX').val(), $('#posY').val(), $('#fixed').prop('checked'), true)"/></td></tr>
+                           <!--<tr><td colspan="2">Fixed: <input type="checkbox" id="fixed"> </td></tr>-->
+                           <tr><td colspan="2"><input type="button" class="btn btn-block btn-primary" value="create" onclick="newNode(null, $('#nodelabel').val(), $('#nodetypes').val(), $('#posX').val(), $('#posY').val(), $('#nodetitle').val(), true)"/></td></tr>
                           </table>
                           </div>
                         </div>
